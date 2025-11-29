@@ -2,97 +2,172 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AI Video Planner – Multi‑Agent Workflow</title>
+  <title>AI Video Generator - 4-Agent Workflow</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    textarea { width: 100%; height: 80px; }
-    button { margin-top: 10px; padding: 8px 16px; }
-    .agent-box { border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 4px; }
-    .agent-title { font-weight: bold; margin-bottom: 5px; }
-    #status { margin-top: 10px; font-style: italic; }
-    pre { white-space: pre-wrap; margin: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; max-width: 1200px; }
+    textarea { width: 100%; height: 80px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; }
+    button { margin-top: 10px; padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    button:hover { background: #2563eb; }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+    .agent-box { border: 1px solid #d1d5db; padding: 16px; margin-top: 16px; border-radius: 8px; background: #f9fafb; }
+    .agent-title { font-weight: 700; margin-bottom: 8px; color: #1f2937; font-size: 16px; }
+    #status { margin-top: 12px; padding: 12px; border-radius: 6px; font-weight: 500; }
+    .status-running { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+    .status-complete { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+    .status-video { background: #dbeafe; color: #1e40af; border: 1px solid #3b82f6; }
+    pre { white-space: pre-wrap; margin: 0; font-family: 'Monaco', monospace; font-size: 14px; line-height: 1.5; }
+    .video-container { margin-top: 16px; text-align: center; }
+    video { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .filename { font-size: 12px; color: #6b7280; margin-top: 8px; }
   </style>
 </head>
 <body>
-  <h1>AI Video Planner – Multi‑Agent Workflow</h1>
+  <h1>AI Video Generator</h1>
+  <p>Enter a topic to watch 4 AI agents collaborate and generate a 10-second AI video.</p>
 
-  <p>Enter a topic to generate a short, informational video plan (outline, scenes, narration, and production brief).</p>
-
-  <label for="prompt">Video topic:</label>
-  <textarea id="prompt" placeholder="e.g., How solar panels work"></textarea>
+  <label for="prompt"><strong>Video topic:</strong></label>
+  <textarea id="prompt" placeholder="e.g., How solar panels convert sunlight to electricity"></textarea>
   <br />
-  <button id="run-btn">Run Video Workflow</button>
+  <button id="run-btn">Generate 10s AI Video</button>
 
-  <div id="status"></div>
+  <div id="status" class="status-running" style="display:none;"></div>
 
   <div class="agent-box">
     <div class="agent-title">Agent A - Video Outline</div>
-    <pre id="agent-a-output"></pre>
+    <pre id="agent-a-output">Waiting for workflow...</pre>
   </div>
 
   <div class="agent-box">
-    <div class="agent-title">Agent B - Scene Plan & Timing</div>
-    <pre id="agent-b-output"></pre>
+    <div class="agent-title">Agent B - Scene Plan</div>
+    <pre id="agent-b-output">Waiting for Agent A...</pre>
   </div>
 
   <div class="agent-box">
-    <div class="agent-title">Agent C - Narration Script</div>
-    <div id="agent-c-output"></div>
+    <div class="agent-title">Agent C - Visual Descriptions</div>
+    <div id="agent-c-output" style="white-space: pre-wrap; font-family: monospace; font-size: 14px;"></div>
   </div>
 
   <div class="agent-box">
-    <div class="agent-title">Agent D - Production Brief (Final)</div>
-    <div id="agent-d-output"></div>
+    <div class="agent-title">Agent D - Video Prompt + Generated Video</div>
+    <div id="agent-d-output" style="white-space: pre-wrap; font-family: monospace; font-size: 14px;"></div>
+    <div class="filename" id="filename-display"></div>
+    <div class="video-container" id="video-container" style="display:none;">
+      <video id="result-video" controls preload="metadata"></video>
+    </div>
   </div>
 
   <script>
     const runBtn = document.getElementById('run-btn');
     const statusDiv = document.getElementById('status');
+    const videoContainer = document.getElementById('video-container');
+    const videoEl = document.getElementById('result-video');
+    const filenameDisplay = document.getElementById('filename-display');
 
     function nl2br(str) {
       if (!str) return '';
       return str.replace(/\n/g, '<br>');
     }
 
+    function updateStatus(message, type = 'running') {
+      statusDiv.textContent = message;
+      statusDiv.className = `status-${type}`;
+      statusDiv.style.display = 'block';
+    }
+
     runBtn.addEventListener('click', async () => {
       const prompt = document.getElementById('prompt').value.trim();
       if (!prompt) {
-        statusDiv.textContent = 'Please enter a topic first.';
+        updateStatus('Please enter a topic first.', 'running');
         return;
       }
 
-      statusDiv.textContent = 'Running video workflow...';
-
-      document.getElementById('agent-a-output').textContent = '';
-      document.getElementById('agent-b-output').textContent = '';
-      document.getElementById('agent-c-output').innerHTML = '';
-      document.getElementById('agent-d-output').innerHTML = '';
+      runBtn.disabled = true;
+      runBtn.textContent = 'Generating...';
+      updateStatus('Starting 4-agent workflow...', 'running');
+      
+      document.getElementById('agent-a-output').textContent = 'Agent A planning...';
+      document.getElementById('agent-b-output').textContent = 'Waiting...';
+      document.getElementById('agent-c-output').innerHTML = 'Waiting...';
+      document.getElementById('agent-d-output').innerHTML = 'Waiting...';
+      filenameDisplay.textContent = '';
+      videoContainer.style.display = 'none';
+      videoEl.src = '';
 
       try {
-        const response = await fetch('/run_workflow', {
+        const response = await fetch('/run_workflow_stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: prompt })
+          body: JSON.stringify({ prompt })
         });
 
         if (!response.ok) {
-          throw new Error('Server error: ' + response.status);
+          throw new Error(`Server error: ${response.status}`);
         }
 
-        const data = await response.json();
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-        // A & B: outlines / scenes as preformatted text (bullets, numbering)
-        document.getElementById('agent-a-output').textContent = data.agent_outputs.A || '';
-        document.getElementById('agent-b-output').textContent = data.agent_outputs.B || '';
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
 
-        // C & D: narration + brief with preserved line breaks
-        document.getElementById('agent-c-output').innerHTML = nl2br(data.agent_outputs.C || '');
-        document.getElementById('agent-d-output').innerHTML = nl2br(data.agent_outputs.D || '');
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop() || '';
 
-        statusDiv.textContent = 'Done.';
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith('data:')) continue;
+
+            const jsonStr = line.substring(5).trim();
+            let event;
+            try {
+              event = JSON.parse(jsonStr);
+            } catch (e) {
+              continue;
+            }
+
+            const agent = event.agent;
+            const content = event.content || '';
+            const videoUrl = event.video_url || null;
+            const videoStatus = event.video_status || '';
+            const filename = event.filename || '';
+
+            if (agent === 'A') {
+              document.getElementById('agent-a-output').textContent = content;
+              updateStatus('Agent A complete. Agent B planning scenes...', 'running');
+            } else if (agent === 'B') {
+              document.getElementById('agent-b-output').textContent = content;
+              updateStatus('Agent B complete. Agent C writing visuals...', 'running');
+            } else if (agent === 'C') {
+              document.getElementById('agent-c-output').innerHTML = nl2br(content);
+              updateStatus('Agent C complete. Generating video...', 'running');
+            } else if (agent === 'D') {
+              document.getElementById('agent-d-output').innerHTML = nl2br(content);
+              if (filename !== 'N/A') {
+                filenameDisplay.textContent = `Saved as: ${filename}`;
+              }
+              updateStatus(`Agent D complete. Video status: ${videoStatus}`, 'video');
+              
+              if (videoUrl) {
+                videoEl.src = videoUrl;
+                videoContainer.style.display = 'block';
+                videoEl.load();
+              }
+            } else if (agent === 'DONE') {
+              updateStatus('Complete! 4 agents generated your 10s video.', 'complete');
+            } else if (agent === 'ERROR') {
+              updateStatus(`Error: ${content}`, 'running');
+            }
+          }
+        }
       } catch (err) {
         console.error(err);
-        statusDiv.textContent = 'Error running workflow. Check console/logs.';
+        updateStatus(`Error: ${err.message}`, 'running');
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = 'Generate 10s AI Video';
       }
     });
   </script>
