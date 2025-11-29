@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Multi-Agent Workflow Demo</title>
+  <title>AI Video Planner – Multi‑Agent Workflow</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     textarea { width: 100%; height: 80px; }
@@ -10,35 +10,38 @@
     .agent-box { border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 4px; }
     .agent-title { font-weight: bold; margin-bottom: 5px; }
     #status { margin-top: 10px; font-style: italic; }
+    pre { white-space: pre-wrap; margin: 0; }
   </style>
 </head>
 <body>
-  <h1>Multi-Agent Workflow</h1>
+  <h1>AI Video Planner – Multi‑Agent Workflow</h1>
 
-  <label for="prompt">Enter an idea or topic to generate essay about:</label>
-  <textarea id="prompt" placeholder="Enter idea/topic here..."></textarea>
+  <p>Enter a topic to generate a short, informational video plan (outline, scenes, narration, and production brief).</p>
+
+  <label for="prompt">Video topic:</label>
+  <textarea id="prompt" placeholder="e.g., How solar panels work"></textarea>
   <br />
-  <button id="run-btn">Run Workflow</button>
+  <button id="run-btn">Run Video Workflow</button>
 
   <div id="status"></div>
 
   <div class="agent-box">
-    <div class="agent-title">Agent A (Planner)</div>
+    <div class="agent-title">Agent A - Video Outline</div>
     <pre id="agent-a-output"></pre>
   </div>
 
   <div class="agent-box">
-    <div class="agent-title">Agent B (Researcher)</div>
+    <div class="agent-title">Agent B - Scene Plan & Timing</div>
     <pre id="agent-b-output"></pre>
   </div>
 
   <div class="agent-box">
-    <div class="agent-title">Agent C (Rough Draft Writer)</div>
+    <div class="agent-title">Agent C - Narration Script</div>
     <div id="agent-c-output"></div>
   </div>
 
   <div class="agent-box">
-    <div class="agent-title">Agent D (Editor / Final)</div>
+    <div class="agent-title">Agent D - Production Brief (Final)</div>
     <div id="agent-d-output"></div>
   </div>
 
@@ -46,18 +49,23 @@
     const runBtn = document.getElementById('run-btn');
     const statusDiv = document.getElementById('status');
 
+    function nl2br(str) {
+      if (!str) return '';
+      return str.replace(/\n/g, '<br>');
+    }
+
     runBtn.addEventListener('click', async () => {
       const prompt = document.getElementById('prompt').value.trim();
       if (!prompt) {
-        statusDiv.textContent = 'Please enter an idea first.';
+        statusDiv.textContent = 'Please enter a topic first.';
         return;
       }
 
-      statusDiv.textContent = 'Running workflow...';
+      statusDiv.textContent = 'Running video workflow...';
 
       document.getElementById('agent-a-output').textContent = '';
       document.getElementById('agent-b-output').textContent = '';
-      document.getElementById('agent-c-output').textContent = '';
+      document.getElementById('agent-c-output').innerHTML = '';
       document.getElementById('agent-d-output').innerHTML = '';
 
       try {
@@ -73,14 +81,13 @@
 
         const data = await response.json();
 
-        document.getElementById('agent-a-output').textContent = data.agent_outputs.A;
-        document.getElementById('agent-b-output').textContent = data.agent_outputs.B;
-        document.getElementById('agent-c-output').textContent = data.agent_outputs.C;
+        // A & B: outlines / scenes as preformatted text (bullets, numbering)
+        document.getElementById('agent-a-output').textContent = data.agent_outputs.A || '';
+        document.getElementById('agent-b-output').textContent = data.agent_outputs.B || '';
 
-        function nl2br(str) {
-            return str.replace(/\n/g, '<br>');
-        }
-        document.getElementById('agent-d-output').innerHTML = nl2br(data.agent_outputs.D);
+        // C & D: narration + brief with preserved line breaks
+        document.getElementById('agent-c-output').innerHTML = nl2br(data.agent_outputs.C || '');
+        document.getElementById('agent-d-output').innerHTML = nl2br(data.agent_outputs.D || '');
 
         statusDiv.textContent = 'Done.';
       } catch (err) {
