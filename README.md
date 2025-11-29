@@ -1,4 +1,4 @@
-# AI Video Generator - 4-Agent Workflow
+# Agentic AI Video Generator
 
 ## Overview
 This project demonstrates a **real-time AI video generation workflow** built with **four distinct AI agents** that collaborate sequentially to create 10-second AI videos from any topic. Using OpenAI's GPT-4o-mini API for planning and Replicate's AI video models for generation, each agent performs a specific task: planning, scene design, visual description, and video creation. The system includes a **graphical web interface** built with Flask and JavaScript for users to enter topics and watch each agent's action live via streaming updates.
