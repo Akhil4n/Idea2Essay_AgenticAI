@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AI Video Generator - 4-Agent Workflow</title>
+  <title>AI Video Generator</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; max-width: 1200px; }
     textarea { width: 100%; height: 80px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; }
@@ -19,49 +19,69 @@
     .video-container { margin-top: 16px; text-align: center; }
     video { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .filename { font-size: 12px; color: #6b7280; margin-top: 8px; }
+    .spinner {
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #3b82f6;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: spin 1s linear infinite;
+      margin: 8px auto;
+      display: none;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .spinner-text {
+      font-size: 13px;
+      color: #4b5563;
+      text-align: center;
+      margin-top: 4px;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <h1>AI Video Generator</h1>
-  <p>Enter a topic to watch 4 AI agents collaborate and generate a 10-second AI video.</p>
-
+  <p>Enter a topic to watch 4 AI agents collaborate to generate a 10-second AI video.</p>
   <label for="prompt"><strong>Video topic:</strong></label>
-  <textarea id="prompt" placeholder="e.g., How solar panels convert sunlight to electricity"></textarea>
+  <textarea id="prompt" placeholder="e.g., Greek Mythology"></textarea>
   <br />
   <button id="run-btn">Generate 10s AI Video</button>
-
   <div id="status" class="status-running" style="display:none;"></div>
-
   <div class="agent-box">
     <div class="agent-title">Agent A - Video Outline</div>
     <pre id="agent-a-output">Waiting for workflow...</pre>
   </div>
-
   <div class="agent-box">
-    <div class="agent-title">Agent B - Scene Plan</div>
-    <pre id="agent-b-output">Waiting for Agent A...</pre>
+    <div class="agent-title">Agent B - Scene Plan + Visuals</div>
+    <pre id="agent-b-output"></pre>
   </div>
-
   <div class="agent-box">
-    <div class="agent-title">Agent C - Visual Descriptions</div>
+    <div class="agent-title">Agent C - Final Video Prompt</div>
     <div id="agent-c-output" style="white-space: pre-wrap; font-family: monospace; font-size: 14px;"></div>
   </div>
-
   <div class="agent-box">
-    <div class="agent-title">Agent D - Video Prompt + Generated Video</div>
+    <div class="agent-title">Agent D - AI Video</div>
     <div id="agent-d-output" style="white-space: pre-wrap; font-family: monospace; font-size: 14px;"></div>
     <div class="filename" id="filename-display"></div>
+    <div id="spinner-container">
+      <div id="video-spinner" class="spinner"></div>
+      <div id="spinner-text" class="spinner-text">Generating video...</div>
+    </div>
     <div class="video-container" id="video-container" style="display:none;">
       <video id="result-video" controls preload="metadata"></video>
     </div>
   </div>
-
   <script>
     const runBtn = document.getElementById('run-btn');
     const statusDiv = document.getElementById('status');
     const videoContainer = document.getElementById('video-container');
     const videoEl = document.getElementById('result-video');
     const filenameDisplay = document.getElementById('filename-display');
+    const spinner = document.getElementById('video-spinner');
+    const spinnerText = document.getElementById('spinner-text');
 
     function nl2br(str) {
       if (!str) return '';
@@ -72,6 +92,16 @@
       statusDiv.textContent = message;
       statusDiv.className = `status-${type}`;
       statusDiv.style.display = 'block';
+    }
+
+    function showSpinner() {
+      spinner.style.display = 'block';
+      spinnerText.style.display = 'block';
+    }
+
+    function hideSpinner() {
+      spinner.style.display = 'none';
+      spinnerText.style.display = 'none';
     }
 
     runBtn.addEventListener('click', async () => {
@@ -85,13 +115,14 @@
       runBtn.textContent = 'Generating...';
       updateStatus('Starting 4-agent workflow...', 'running');
       
-      document.getElementById('agent-a-output').textContent = 'Agent A planning...';
-      document.getElementById('agent-b-output').textContent = 'Waiting...';
-      document.getElementById('agent-c-output').innerHTML = 'Waiting...';
-      document.getElementById('agent-d-output').innerHTML = 'Waiting...';
+      document.getElementById('agent-a-output').textContent = 'Waiting for workflow...';
+      document.getElementById('agent-b-output').textContent = '';
+      document.getElementById('agent-c-output').innerHTML = '';
+      document.getElementById('agent-d-output').innerHTML = '';
       filenameDisplay.textContent = '';
       videoContainer.style.display = 'none';
       videoEl.src = '';
+      hideSpinner();
 
       try {
         const response = await fetch('/run_workflow_stream', {
@@ -136,16 +167,17 @@
 
             if (agent === 'A') {
               document.getElementById('agent-a-output').textContent = content;
-              updateStatus('Agent A complete. Agent B planning scenes...', 'running');
+              updateStatus('Agent A complete. Agent B creating scenes + visuals...', 'running');
             } else if (agent === 'B') {
               document.getElementById('agent-b-output').textContent = content;
-              updateStatus('Agent B complete. Agent C writing visuals...', 'running');
+              updateStatus('Agent B complete. Agent C building final prompt...', 'running');
             } else if (agent === 'C') {
               document.getElementById('agent-c-output').innerHTML = nl2br(content);
-              updateStatus('Agent C complete. Generating video...', 'running');
+              updateStatus('Agent C complete. Agent D generating video...', 'running');
+              showSpinner();
             } else if (agent === 'D') {
-              document.getElementById('agent-d-output').innerHTML = nl2br(content);
-              if (filename !== 'N/A') {
+              hideSpinner();
+              if (filename && filename !== 'N/A') {
                 filenameDisplay.textContent = `Saved as: ${filename}`;
               }
               updateStatus(`Agent D complete. Video status: ${videoStatus}`, 'video');
