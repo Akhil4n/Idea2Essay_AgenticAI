@@ -10,7 +10,6 @@ import re
 
 load_dotenv()
 
-# Ensure videos folder exists
 os.makedirs("videos", exist_ok=True)
 
 app = Flask(__name__)
@@ -21,20 +20,17 @@ replicate.Client(api_token=os.getenv("REPLICATE_API_TOKEN"))
 # Helpers
 
 def sanitize_filename(filename: str) -> str:
-    """Make filename safe: remove special chars, limit length."""
     filename = re.sub(r'[^\w\s-]', '', filename).strip()
     filename = re.sub(r'[-\s]+', '_', filename)
     return filename[:50]
 
 def get_video_filename(user_topic: str) -> str:
-    """Generate topic-based filename: videos/topic_timestamp.mp4."""
     clean_topic = sanitize_filename(user_topic) or "video"
     timestamp = int(time.time())
     return f"videos/{clean_topic}_{timestamp}.mp4"
 
 
 def call_openai_agent(instructions: str, user_input: str) -> str:
-    """Call OpenAI chat completion with system + user messages."""
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
